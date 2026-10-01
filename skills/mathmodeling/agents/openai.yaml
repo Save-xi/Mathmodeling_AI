@@ -1,0 +1,6 @@
+interface:
+  display_name: "Math Modeling 数学建模竞赛"
+  short_description: "面向数学建模竞赛的审题、建模、求解、验证、论文写作与终审"
+  default_prompt: "使用 $mathmodeling 分析这道数学建模题，先给问题地图、基线模型、主模型和验证方案。"
+policy:
+  allow_implicit_invocation: true

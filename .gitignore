@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Secrets and local environment
+.env
+.env.*
+*.token
+*.key
+credentials.json
+
+# LaTeX build output
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Local corpus and generated results.
+# PDFs are ignored by default because the biggest risk for this repository is
+# accidentally committing third-party award-paper PDFs or compiled build output.
+# Add an intentional PDF with: git add -f <file.pdf>
+corpus/
+*.pdf
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

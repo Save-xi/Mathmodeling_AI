@@ -1,0 +1,6 @@
+interface:
+  display_name: "国赛论文写作与语料审校"
+  short_description: "保留数学语义和证据边界，结合真实语料提升国赛论文表达与论证密度"
+  default_prompt: "使用 $guosai-paper 按请求范围起草、润色或审校国赛论文，保留数值公式与对象对应关系，理顺论证并压缩冗余，标明必要的实质修正和待核项。"
+policy:
+  allow_implicit_invocation: true

@@ -1,0 +1,25 @@
+{
+  "schema_version": 2,
+  "title": "区域仓配货预测与资源分配（合成示例）",
+  "problem_count": 2,
+  "entrypoints": [
+    "problem_1.py",
+    "problem_2.py"
+  ],
+  "canonical_directories": {
+    "raw_data": "data/raw",
+    "processed_data": "data/processed",
+    "tables": "results/tables",
+    "figures": "results/figures",
+    "logs": "results/logs",
+    "paper": "paper",
+    "evidence": "docs/evidence_map.md"
+  },
+  "source_files": [],
+  "run_manifest": "results/run_manifest.json",
+  "submission": {
+    "source": "paper/main.tex",
+    "pdf": "paper/output/main.pdf"
+  },
+  "created_at_utc": "2026-10-01T09:28:22.417906+00:00"
+}

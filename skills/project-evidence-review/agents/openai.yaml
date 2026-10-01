@@ -1,0 +1,4 @@
+interface:
+  display_name: "项目证据二审"
+  short_description: "核验项目声明、实际代码与运行证据，定位缺口并给出下一步建议"
+  default_prompt: "使用 $project-evidence-review 核验这个项目或任务的最新完成声明，对照当前源码与实际结果，给出二审结论和下一步建议。"

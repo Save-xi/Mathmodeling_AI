@@ -1,0 +1,18 @@
+project:
+  title: "区域仓配货预测与资源分配（合成示例）"
+  seed: 42
+
+data:
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+
+solver:
+  name: ""
+  time_limit_seconds: 600
+  mip_gap: 0.001
+
+uncertainty:
+  scenario_count: null
+  confidence_level: null
+
+# 按实际任务设置适用参数并记录依据；不需要随机场景时不要机械生成场景。

@@ -1,0 +1,181 @@
+% !TeX program = xelatex
+% 通用中文数学建模竞赛论文骨架。若赛事提供当年官方模板，请以官方模板为准。
+% 电子版默认由本文件生成 PDF，不生成 Word；不得包含承诺书和编号专用页。
+\documentclass[UTF8,zihao=-4]{ctexart}
+
+\usepackage[a4paper,top=2.5cm,bottom=2.5cm,left=2.5cm,right=2.5cm]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs,tabularx,array}
+\usepackage{graphicx,float}
+\usepackage[font=small,labelsep=quad]{caption}
+\usepackage[hidelinks]{hyperref}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\graphicspath{{../results/figures/}{figures/}}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[2]
+\raggedbottom
+
+\newcommand{\papertitle}{区域仓配货预测与资源分配（合成示例）}
+
+\begin{document}
+\pagestyle{plain}
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\begin{center}
+  {\zihao{2}\bfseries \papertitle\par}
+\end{center}
+\vspace{0.5em}
+
+% 摘要应在正文和全部规范结果核验完成后最后撰写。
+\begin{abstract}
+待补：按“任务—逐问方法—关键定量结果及条件—验证证据—结论”的顺序撰写，并确保所有数字可追溯。
+\end{abstract}
+
+\noindent\textbf{关键词：}待补；待补；待补
+
+% 国赛电子论文以摘要专用页开始；正文从下一页开始。其他赛事按其官方模板适配。
+\clearpage
+
+\section{问题重述}
+
+待补：只重述决策目标、输入、约束与输出，不照抄原题。
+
+\section{问题分析}
+
+待补：按题目顺序说明机制、难点、耦合关系、基线、主模型与验证路线。
+
+\section{模型假设、符号与数据处理}
+
+\subsection{事实与模型假设}
+
+待补：区分事实、推断、假设、提案与未知项，另记执行/核验状态；说明假设影响与验证方法。
+
+\subsection{符号说明}
+
+待补：统一给出集合、索引、参数、变量、单位和定义域。
+
+\subsection{数据来源、预处理与质量审计}
+
+待补：说明来源、字段、单位、主键、缺失、异常、变换及信息时序。
+
+% ========== 图、表与符号说明的写法示例（本段整体注释，不影响编译结果）==========
+% 用法：把需要的片段复制到正文对应位置，删去行首的 % 后按实际内容修改。
+%
+% 【插图】宽度写成 \textwidth 的比例，不用 6cm 之类的绝对长度：
+% 版心宽度随页边距和模板变化，比例写法能自动适配，避免图片超出版心产生 Overfull \hbox 警告。
+% 0.85 是常用取值；若图中文字太小，应重新生成图或拆分，而不是继续调大比例。
+% 图片文件放在 results/figures 或 paper/figures 下，由前言的 \graphicspath 解析，不写绝对路径。
+% \label 必须紧跟在 \caption 之后，否则交叉引用会指向上一个编号。
+%
+% \begin{figure}[htbp]
+%   \centering
+%   \includegraphics[width=0.85\textwidth]{q1_route.pdf}
+%   \caption{第 1 问最优路径与基线路径对比（$\lambda=0.3$，随机种子 42）}
+%   \label{fig:q1-route}
+% \end{figure}
+%
+% 正文用 \ref 交叉引用，不要手写“如下图”或固定编号：
+% 由图~\ref{fig:q1-route} 可见，改进模型在相同约束下将总里程降低 12.4\%。
+%
+% 【三线表】用 booktabs 的 \toprule/\midrule/\bottomrule，不加竖线，正文表格不用 \hline。
+% 列数多或表头较长时优先用 tabularx：表格总宽固定为 \textwidth，模板已定义的 Y 列
+% （左对齐、可自动换行的 X 列）分摊剩余宽度，避免长单元格把表格撑出版心。
+%
+% \begin{table}[htbp]
+%   \centering
+%   \caption{第 1 问不同模型的求解结果对比}
+%   \label{tab:q1-compare}
+%   \begin{tabularx}{\textwidth}{l r r Y}
+%     \toprule
+%     模型 & 目标值 & 运行时间/s & 说明 \\
+%     \midrule
+%     基线（贪心） & 1854.2 & 0.6 & 可行解，未证明最优 \\
+%     主模型（MILP） & 1623.7 & 42.1 & 求解状态 optimal，gap 为 0 \\
+%     \bottomrule
+%   \end{tabularx}
+% \end{table}
+%
+% 【符号说明表】符号、含义、单位与取值范围一次定义，全文、代码和表图保持一致：
+%
+% \begin{table}[htbp]
+%   \centering
+%   \caption{主要符号说明}
+%   \label{tab:symbols}
+%   \begin{tabularx}{\textwidth}{c l c Y}
+%     \toprule
+%     符号 & 含义 & 单位 & 取值范围与来源 \\
+%     \midrule
+%     $x_{ij}$ & 节点 $i$ 到节点 $j$ 的运输量 & t & $x_{ij}\ge 0$，决策变量 \\
+%     $c_{ij}$ & 单位运输成本 & 元/t & 附件 1 \\
+%     $\lambda$ & 成本与时效的权衡系数 & 无量纲 & $\lambda\in[0,1]$，见灵敏度分析 \\
+%     \bottomrule
+%   \end{tabularx}
+% \end{table}
+% ==============================================================================
+
+\section{第 1 问：模型建立、求解与结果}
+
+\subsection{建模思路与基线}
+
+待补：解释机制、基线、主模型选择及备选方案。
+
+\subsection{模型建立与求解}
+
+待补：给出变量、目标、约束、算法、参数和可复现的求解信息。
+
+\subsection{结果解释与本问验证}
+
+待补：报告带条件的定量结果，并关联规范表图、基线比较和验证证据。
+
+\section{第 2 问：模型建立、求解与结果}
+
+\subsection{建模思路与基线}
+
+待补：解释机制、基线、主模型选择及备选方案。
+
+\subsection{模型建立与求解}
+
+待补：给出变量、目标、约束、算法、参数和可复现的求解信息。
+
+\subsection{结果解释与本问验证}
+
+待补：报告带条件的定量结果，并关联规范表图、基线比较和验证证据。
+
+\section{模型检验、敏感性与稳健性}
+
+待补：报告与模型类型匹配的验证、参数扰动、不确定性以及失败案例。
+
+\section{模型评价、局限与结论}
+
+待补：结论强度不得超过证据，说明适用边界、局限和可执行建议。
+
+% 按当年规则填写。2026 年国赛要求本声明位于参考文献之前。
+\section*{AI 工具使用声明}
+
+待补：如使用 AI，简述用途并指向支撑材料中的 AI工具使用详情.pdf；如未使用，填写当年规则规定的未使用声明。
+
+\begin{thebibliography}{99}
+\bibitem{reference-example}
+待补：按赛事规定的格式列出实际引用且已核验的文献。
+\end{thebibliography}
+
+\appendix
+\section{补充结果与复现说明}
+
+待补：记录运行入口、环境、种子、求解状态、输出路径及必要补充表图。
+
+\section{完整源程序与运行说明}
+
+% 2026 国赛要求附录包含完整、可运行的源程序及必要交互命令；支撑压缩包不能替代此项。
+% 按实际使用代码纳入共享模块与各问入口。未用程序时按当年规则明确声明。
+待补：按当年规则列出实际使用的完整源程序、共享模块、必要软件交互命令和复现步骤。
+
+\section{支撑材料文件列表}
+
+待补：列出全部可运行源程序、使用的自主数据、必要中间结果，以及适用时的 AI工具使用详情.pdf。
+
+\end{document}

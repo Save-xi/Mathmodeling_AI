@@ -1,0 +1,6 @@
+interface:
+  display_name: "Math Modeling Frontier 数模前沿创新"
+  short_description: "赛前核验算法与文献锚点，赛时按题型匹配并针对具体缺口补漏"
+  default_prompt: "使用 $mathmodeling-frontier 按题型准备或匹配已核验的算法锚点，给出基线、适用增量、资源与验证条件，并只对本题遗漏进行有时限的检索。"
+policy:
+  allow_implicit_invocation: true

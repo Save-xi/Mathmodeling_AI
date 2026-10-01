@@ -1,0 +1,1244 @@
+{
+  "schema_version": 1,
+  "release_id": "anchors-2026-09-06",
+  "prepared_on": "2026-09-06",
+  "status": "PREPARED",
+  "evidence_basis": "PRIMARY_SOURCES_CHECKED_PRECONTEST",
+  "coverage_boundary": "按任务族准备；不是穷尽文献、全篇复现、所有模型本机就绪或实际赛题排名。",
+  "resource_boundary": "以 CPU/单卡 8GB 为竞赛筛选包络；所列新模型均未在本机试跑，不能把论文规模上限当可运行承诺。",
+  "reuse_rule": "离线使用保留核验日期；本日最新声明与缺失/变化条件才作定向补漏。",
+  "routes": [
+    {
+      "id": "tabular",
+      "title": "独立表格回归与分类",
+      "aliases": [
+        "表格",
+        "回归",
+        "分类"
+      ],
+      "signals": "有监督独立样本；明确 n/p、类别数、不平衡、缺失与分组结构。",
+      "baseline": "均值/多数类 → ridge/logistic → 有限调参的 GBDT；分类阈值在训练验证内部选择。",
+      "module_contract": "同一时点可用字段 X → 点估计/概率；集成在合法训练折内完成。",
+      "conditional_upgrades": [
+        "TabM：以参数共享 MLP 集成替换复杂表格网络，适合有足够样本且树模型存在稳定缺口。",
+        "TabPFNv2 / TabICLv2：已有权重的上下文预测；先看独立样本结构。TabPFN-3 作为明确版本的近期候选，不能把旧论文效果移植过去。"
+      ],
+      "reject_conditions": [
+        "把实体重复观测当 IID；目标/未来字段泄漏。",
+        "TabICLv2 官方未测试小于 300 样本，不据此默认推荐给几十行数据。",
+        "公开最大规模、零样本或模型参数量不证明本机 8GB 足够；权重/访问未知时不换主模型。"
+      ],
+      "minimal_validation": "同一外层划分与预算比较经典基线和一个增量；报告分类校准/少数类或回归残差、外推、时空子群性能。",
+      "evidence_ids": [
+        "tabm2025",
+        "tabpfn2_2025",
+        "tabicl2_2026",
+        "tabpfn3_2026",
+        "tfm_physics2026"
+      ],
+      "gap_queries": [
+        "{domain} tabular prediction {n_samples} {feature_type} TabM TabICLv2 benchmark limitation",
+        "{selected_version} {missing_condition} official model card weights memory license after:{anchor_date}"
+      ],
+      "implementation_caution": "先锁定具体包和 checkpoint；不默认调用付费 API、不在预测入口临时下载全家桶。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "forecast",
+      "title": "时序预测与协变量",
+      "aliases": [
+        "预测",
+        "时序",
+        "时间序列"
+      ],
+      "signals": "先定预测步长、周期、历史长度、目标到达时点及可用外生变量。",
+      "baseline": "季节朴素/ETS/ARIMA或状态空间；再比较合法滞后特征的线性/树模型。",
+      "module_contract": "截止 t 的历史与已知未来协变量 → t+1:t+h 点/分位数；未知未来量不能填真实值。",
+      "conditional_upgrades": [
+        "现成 Chronos-2 或小型变体：已核对多变量/协变量接口时进行一个零样本对照。",
+        "TimesFM 3.0：2026-08 新发布的原生多变量候选；与 2.5/2024 论文分别记版本、许可和运行结果。",
+        "有持续反馈和漂移时再考虑固定 backbone 的门控在线残差校准。"
+      ],
+      "reject_conditions": [
+        "仅几个时间点或不够周期却从零训大模型。",
+        "用未来真实协变量或先更新再预测。",
+        "基础模型公开基准排名不能替代本领域前向验证；其预训练数据重叠也需列为评价局限。"
+      ],
+      "minimal_validation": "同滚动起点、步长和信息集；记录 MAE/MASE 等合适指标、分位数损失/覆盖、延迟与下游决策回放。",
+      "evidence_ids": [
+        "chronos2_2025",
+        "timesfm2024",
+        "timesfm3_2026",
+        "ts_energy2026",
+        "ts_cloud2025",
+        "online_calibration2026"
+      ],
+      "gap_queries": [
+        "{domain} {horizon} forecasting {future_covariates} {missing_regime} benchmark limitation",
+        "{selected_checkpoint} {missing_input_support} official release after:{anchor_date}"
+      ],
+      "implementation_caution": "Chronos/TimesFM 不同代接口不同；先小窗口测资源与加载成本。本卡没有完成任何权重下载或 GPU 试跑。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "panel",
+      "title": "短面板与多实体重复观测",
+      "aliases": [
+        "面板",
+        "短面板"
+      ],
+      "signals": "分别记录实体数、各实体时间长度；已知实体未来与未见实体是不同目标。",
+      "baseline": "汇总/季节朴素、正则化 pooled 模型；有依据时固定效应/层级模型。",
+      "module_contract": "实体与时间信息 → 合法预测；固定效应不能无条件外推到新实体，也不能自动解释为政策因果。",
+      "conditional_upgrades": [
+        "用共享趋势或部分汇聚稳定短实体序列；外推方案从 forecast 卡选择。",
+        "非线性缺口明确且独立实体/时间信息足够时，才评估 TabM 或已有表格基础模型。"
+      ],
+      "reject_conditions": [
+        "把 6 个实体×8 月当 48 个独立时序单位。",
+        "随机构造 train/test 导致同一实体未来泄漏。",
+        "以提高拟合度替代处理效应识别。"
+      ],
+      "minimal_validation": "部署匹配的前向/分组留出；变换只在训练折拟合；解释实体/时期稳定性，识别不足保持描述性。",
+      "evidence_ids": [
+        "did2021",
+        "tabm2025",
+        "tabicl2_2026",
+        "conformal_dependence2026"
+      ],
+      "gap_queries": [
+        "{domain} short panel {entities} {periods} partial pooling forecasting validation",
+        "{missing_condition} panel prediction new entities temporal leakage limitations"
+      ],
+      "implementation_caution": "样本小优先现有 CPU 统计工具；数据类型是路由线索，不是启动基础模型的理由。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "causal",
+      "title": "政策效应与因果识别",
+      "aliases": [
+        "因果",
+        "政策"
+      ],
+      "signals": "需明确处理、结果、估计对象、时序、混杂、重叠和跨单位干扰。",
+      "baseline": "关联描述 + 识别图/机制；只有设计允许时做调整、DiD、IV 或 RD。",
+      "module_contract": "识别假设与观测设计 → 有条件的效应/界；预测重要性不能代替识别。",
+      "conditional_upgrades": [
+        "错开处理 DiD：组别—时间效应再聚合，避免不加判断使用 TWFE 因果解释。",
+        "无法点识别时找有领域依据的效应界；2026 ML 辅助决策界方法只在 prior RCT 和相关单调性条件成立时考虑。"
+      ],
+      "reject_conditions": [
+        "缺少处理定义、可信对照或必要识别条件。",
+        "注意力/特征重要性被称为因果；把界中点当已识别效果。",
+        "把 ML 辅助决策界论文当一般观察面板的通用工具。"
+      ],
+      "minimal_validation": "检验/说明支持识别的设计，报告事件时点、安慰剂和假设敏感性；无法确认的假设明确保留。",
+      "evidence_ids": [
+        "did2021",
+        "causal_bounds2026"
+      ],
+      "gap_queries": [
+        "{treatment} {outcome} {identification_design} {interference_or_overlap_gap} identification sensitivity",
+        "{selected_design} {missing_assumption} partial identification recent primary paper"
+      ],
+      "implementation_caution": "不为用新算法而发明自然实验或 RCT；条件不成立回到关联/情景结论。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "spatiotemporal",
+      "title": "时空与网络预测",
+      "aliases": [
+        "时空",
+        "图预测"
+      ],
+      "signals": "存在可解释的邻接/距离/流量关系与足够动态观测；区分预测和网络决策。",
+      "baseline": "无图时序/树模型 → 固定真实图的简单空间或时序模型。",
+      "module_contract": "历史节点特征和当时可见边 → 节点/区域未来结果；检索只访问合法历史库。",
+      "conditional_upgrades": [
+        "STRAP 类型的历史模式检索只在时间/区域 OOD 缺陷成立时进入；也可先用简单历史近邻作增量。",
+        "少节点先考虑空间残差/真实图特征，避免直接扩大为复杂动态图网络。"
+      ],
+      "reject_conditions": [
+        "阈值凑图、利用未来构图或检索到测试片段。",
+        "仅随机节点划分即声称跨地区/未来有效。"
+      ],
+      "minimal_validation": "无图、固定图、一个检索增量同协议对照；留时间或留区域，边扰动与延迟/训练成本都计入。",
+      "evidence_ids": [
+        "strap2025",
+        "ts_cloud2025",
+        "online_calibration2026"
+      ],
+      "gap_queries": [
+        "{domain} spatiotemporal {graph_semantics} {ood_target} simple baseline retrieval",
+        "{selected_method} {missing_condition} leakage graph ablation limitation"
+      ],
+      "implementation_caution": "图构建和历史库准备也算成本；STRAP 本机依赖/权重未核验。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "network",
+      "title": "路径、网络流与路由决策",
+      "aliases": [
+        "网络",
+        "路径",
+        "图优化"
+      ],
+      "signals": "固定图、容量、时间窗、路径或设施决策；单一图还是反复实例必须分清。",
+      "baseline": "最短路/最大流/匹配等结构算法；复杂约束用 MILP/CP-SAT，加题目原生可行启发式。",
+      "module_contract": "节点/边与业务限制 → 明确可行路径/流量；所有输出在原图重算。",
+      "conditional_upgrades": [
+        "优先利用网络结构分解、割、列生成或大邻域的可解释增量。",
+        "若边成本需预测，切到 predict-optimize；有大量相关实例时才讨论学习热启动/邻域。"
+      ],
+      "reject_conditions": [
+        "看到 graph 就选 GNN，或单一路由实例临时训练 RL。",
+        "连续解舍入成路径后不检查连通性、容量和时间窗。"
+      ],
+      "minimal_validation": "小图穷举/精确解作对照；原始约束复算，报告可行解、界/间隙、总耗时与扰动稳定。",
+      "evidence_ids": [
+        "cpsat_docs",
+        "spo2022",
+        "metaphor2024"
+      ],
+      "gap_queries": [
+        "{network_problem} {new_constraint} exact formulation decomposition benchmark",
+        "{instance_regime} {candidate_neighborhood} same budget feasibility limitation"
+      ],
+      "implementation_caution": "真实网络/精确求解优先；不用新隐喻名替代复杂度、界与对照。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "optimization",
+      "title": "排程、分配与约束优化",
+      "aliases": [
+        "优化",
+        "排程",
+        "分配"
+      ],
+      "signals": "固定变量域、目标方向、硬约束；一次求解和大量同类实例是不同成本结构。",
+      "baseline": "可行构造 + LP/MILP/CP/凸优化或有依据的 NLP；建立可用界。",
+      "module_contract": "条件/参数 → 最终可行决策；松弛、罚函数、局部解与原问题分开。",
+      "conditional_upgrades": [
+        "先收紧界、改变量表达、分解或暖启动；在明确瓶颈上做一个增量。",
+        "仅大量相关实例且有训练数据时考虑学习辅助搜索；保留精确可行性/界。"
+      ],
+      "reject_conditions": [
+        "无可行 incumbent 却报告 solver success。",
+        "用新动物名或初始化替换冒充新算法。",
+        "忽略训练、oracle 和修复的总时间。"
+      ],
+      "minimal_validation": "同一时限/容差下比较目标、可行性、bound/gap 与 anytime；对导出后舍入决策重算。",
+      "evidence_ids": [
+        "cpsat_docs",
+        "metaphor2024",
+        "robust_dfl2026"
+      ],
+      "gap_queries": [
+        "{optimization_structure} {new_constraint} formulation decomposition exact algorithm",
+        "{selected_solver_or_method} {bottleneck} benchmark bound limitation"
+      ],
+      "implementation_caution": "先检查已安装求解器与许可证；CP-SAT 只支持整数表达，缩放误差须核对。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "predict-optimize",
+      "title": "预测驱动决策",
+      "aliases": [
+        "预测优化",
+        "决策聚焦"
+      ],
+      "signals": "需求/成本/收益预测进入优化；需有历史可回放决策，DFL 另需许多相关训练实例。",
+      "baseline": "简单预测 → 固定可行优化层；与朴素决策策略同场景比较。",
+      "module_contract": "截止 t 的特征 → 参数预测 → 冻结决策 → 揭示真实参数计算 regret/成本/违约。",
+      "conditional_upgrades": [
+        "误差风险影响决策时优先场景/CVaR/鲁棒层。",
+        "SPO+：保持适用下游目标/约束结构，优化决策损失；2026 robust DFL 再针对有依据的系数误差/偏移。"
+      ],
+      "reject_conditions": [
+        "只降低预测 MSE 就宣称决策更优。",
+        "单个静态优化实例却训练 DFL。",
+        "先看到真实参数再修正历史决策；oracle 与实际条件不同。"
+      ],
+      "minimal_validation": "固定信息与 solver 时限回放真实目标、regret、CVaR/违约率，加入无决策损失训练的匹配对照。",
+      "evidence_ids": [
+        "spo2022",
+        "robust_dfl2026",
+        "dro2025"
+      ],
+      "gap_queries": [
+        "{downstream_problem} {uncertain_coefficient} predict then optimize decision regret constraints",
+        "{selected_loss} {distribution_shift_or_constraint_gap} baseline oracle budget"
+      ],
+      "implementation_caution": "DFL 候选须计入反复 solver 调用和训练成本；未经目标/约束适配不直接复制损失。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "robust",
+      "title": "稳健、随机与分布鲁棒决策",
+      "aliases": [
+        "鲁棒",
+        "稳健",
+        "随机优化"
+      ],
+      "signals": "参数区间、样本情景或分布本身不确定；概率信息与确定区间分开。",
+      "baseline": "标称解 + 有意义压力情景；有分布时用 SAA/CVaR，无分布但有支持集时用有界鲁棒。",
+      "module_contract": "不确定信息 → 合法场景/不确定集/歧义集 → 可行决策及保守性成本。",
+      "conditional_upgrades": [
+        "2025 DRO 综述用于按信息选择矩/散度/Wasserstein 等集合与可求解重构。",
+        "只有预测训练实例与分布漂移均明确时再叠加 robust DFL。"
+      ],
+      "reject_conditions": [
+        "无来源地调半径直到效果最好。",
+        "给确定性区间贴 95% 概率标签。",
+        "边际区间当作联合分布或路径可行保证。"
+      ],
+      "minimal_validation": "校准与评估场景分开，报告样本外风险、违约、决策稳定区间与保守性代价。",
+      "evidence_ids": [
+        "dro2025",
+        "robust_dfl2026",
+        "conformal_dependence2026"
+      ],
+      "gap_queries": [
+        "{uncertainty_information} {constraints} robust reformulation ambiguity set calibration",
+        "{selected_set} {dependence_or_tail_gap} out of sample guarantee limitation"
+      ],
+      "implementation_caution": "先选可审计且能求解的集合；歧义集越复杂越需检查计算与证据成本。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "uncertainty",
+      "title": "区间、联合轨迹与在线校准",
+      "aliases": [
+        "不确定性",
+        "区间",
+        "共形"
+      ],
+      "signals": "先决定参数区间、预测边际区间、联合多步区域还是轨迹分布。",
+      "baseline": "残差/正确独立单位的 bootstrap 或参数敏感性；有校准集再做合适区间。",
+      "module_contract": "独立于最终评估的信息 → 校准规则 → 有条件的覆盖/宽度；当前真实值只更新下一步。",
+      "conditional_upgrades": [
+        "EnbPI：有相应依赖条件与数据量时做序贯残差校准。",
+        "2026 依赖理论用于收窄保证的条件；在线漂移论文提供固定 backbone+门控校准候选。"
+      ],
+      "reject_conditions": [
+        "把有限校准样本或 beta-mixing 理论写成任意序列保证。",
+        "只检查点覆盖，却主张累计风险或全程安全。",
+        "没有持续反馈却使用 predict-then-update 的结果声明。"
+      ],
+      "minimal_validation": "滚动覆盖、宽度、区间评分，按真实对象检查联合/峰值/累计事件；保留校准和测试时点。",
+      "evidence_ids": [
+        "enbpi2021",
+        "conformal_dependence2026",
+        "online_calibration2026"
+      ],
+      "gap_queries": [
+        "{prediction_object} conformal {dependence_type} {horizon} coverage assumptions",
+        "{selected_calibrator} {feedback_or_joint_gap} failure limitation primary paper"
+      ],
+      "implementation_caution": "现成量化输出不等于已校准；小样本下不强制追求无法支撑的高置信保证。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "dynamics",
+      "title": "机理方程、反演与算子",
+      "aliases": [
+        "动力学",
+        "PDE",
+        "ODE",
+        "反演"
+      ],
+      "signals": "区分单次正向/反演、结构失配与相关系统族的重复仿真；明确边初值和观测。",
+      "baseline": "守恒/几何机理 + 数值 ODE/PDE + 受约束参数估计；验证可辨识性与步长收敛。",
+      "module_contract": "物理参数/初边值 → 状态；残差分支只能表示可解释的未建模部分，参数和结构项不能任意互相补偿。",
+      "conditional_upgrades": [
+        "数据支持时做小型残差或稀疏动力学修正。",
+        "APIC：同类系统族重复校准才考虑摊销参数/结构失配。",
+        "DeltaPhi：已有多轨迹算子学习任务、近邻物理状态可用时对残差映射做一个增量。"
+      ],
+      "reject_conditions": [
+        "仅单轨迹/单个可快速数值求解实例就预训练算子。",
+        "无参数恢复、守恒、网格/初值外推证据。",
+        "把表格基础模型拟合当作学会物理定律。"
+      ],
+      "minimal_validation": "合成参数恢复、守恒/边界、步长网格收敛；未见参数/系统验证；报告数据生成+训练+推断总成本和摊销点。",
+      "evidence_ids": [
+        "apic2026",
+        "deltaphi2025",
+        "pysindy2020",
+        "tfm_physics2026"
+      ],
+      "gap_queries": [
+        "{equation_family} {boundary_condition} {inverse_or_repeated_query} numerical baseline discrepancy",
+        "{selected_method} {identifiability_or_extrapolation_gap} parameter recovery limitation"
+      ],
+      "implementation_caution": "APIC/DeltaPhi 公开代码页已核对，许可证与本机资源仍未确认；不能直接宣布赛前已跑通。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "symbolic",
+      "title": "公式发现与可解释关系",
+      "aliases": [
+        "符号回归",
+        "公式发现"
+      ],
+      "signals": "题目确实需要方程而不只要预测；数据噪声、量纲与可观测状态明确。",
+      "baseline": "量纲分析 + 低阶/稀疏可解释回归；动力学可用 SINDy 类候选库。",
+      "module_contract": "带单位变量与候选算子 → 简洁关系 + 参数/结构稳定性；经验式与定律身份分开。",
+      "conditional_upgrades": [
+        "先约束函数库、量纲、符号和复杂度，避免全算子搜索。",
+        "CADSR 2026：普通符号回归确有复杂度/搜索缺陷且代码成本可控时才试复杂度奖励与策略更新。"
+      ],
+      "reject_conditions": [
+        "从训练拟合最高选式却不留出工况。",
+        "无单位或结构稳定性；把相关表达式叫因果机制。",
+        "搜索预算无法与经典基线公平比较。"
+      ],
+      "minimal_validation": "未见范围/工况误差、维度和极限、噪声/种子下公式稳定性；分别报告结构与参数不确定。",
+      "evidence_ids": [
+        "pysindy2020",
+        "cadsr2026",
+        "tfm_physics2026"
+      ],
+      "gap_queries": [
+        "{domain_equation} symbolic regression dimensional constraints noise sparse baseline",
+        "{selected_search} {extrapolation_or_complexity_gap} benchmark code limitation"
+      ],
+      "implementation_caution": "CADSR 本机未运行；先试现有稀疏拟合或少量候选，不临场新增大规模策略训练。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "multiobjective-bo",
+      "title": "多目标与昂贵黑盒优化",
+      "aliases": [
+        "多目标",
+        "贝叶斯优化",
+        "BO"
+      ],
+      "signals": "区分便宜显式目标的 Pareto 求解和每次评价昂贵/带噪的黑盒实验。",
+      "baseline": "显式目标用单目标锚点、epsilon 约束/词典序；黑盒用随机/LHS 与调校合理的 GP-BO。",
+      "module_contract": "偏好/真实评价预算 → 可行非支配解；代理建议需由原目标实际复测。",
+      "conditional_upgrades": [
+        "高维先检查 GP 长度尺度先验与有效维数，再考虑结构化降维。",
+        "昂贵、带噪、多目标且可批量评价时考虑 qNEHVI 类采集，不与普通 MILP 混用。"
+      ],
+      "reject_conditions": [
+        "低成本目标也承担反复 GP 拟合成本。",
+        "主观权重选一个点就称完整 Pareto；超体积参考点随算法改变。",
+        "代理最优没有真实复测或约束检查。"
+      ],
+      "minimal_validation": "同真实函数评价次数与总耗时；固定尺度/参考点，报告可行比例、非支配性、偏好敏感性和复测结果。",
+      "evidence_ids": [
+        "vanilla_bo2024",
+        "qnehvi2021",
+        "smaa2001"
+      ],
+      "gap_queries": [
+        "{objective_cost} {dimension} {constraints} multi objective Bayesian optimization benchmark",
+        "{selected_acquisition} {noise_or_reference_point_gap} limitation total runtime"
+      ],
+      "implementation_caution": "不因为维数高就默认复杂 BO；公式中 epsilon 与约束的单位须保持一致。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "simulation",
+      "title": "事件仿真与敏感性",
+      "aliases": [
+        "仿真",
+        "蒙特卡洛",
+        "排队"
+      ],
+      "signals": "输入生成机制、状态变化、随机源与性能指标可以追溯。",
+      "baseline": "手算极限/平衡模型 + 小型事件仿真或 Monte Carlo。",
+      "module_contract": "固定参数/随机源 → 合法轨迹/事件 → 指标及 Monte Carlo 误差；校准和策略比较分开。",
+      "conditional_upgrades": [
+        "先用 Morris/适用的全局敏感性定位影响结论的参数和交互，再加模型复杂度。",
+        "大量重复且仿真昂贵时借用 GP/BO 代理或实验设计，但原仿真保留独立复测。"
+      ],
+      "reject_conditions": [
+        "未校准模拟器当真实世界验证。",
+        "相关输入直接套独立 Sobol 解释。",
+        "只跑一个随机种子，或为了有显著差异调输入范围。"
+      ],
+      "minimal_validation": "事件追踪、守恒、热身/终止精度、独立重复和随机误差；代理不替代最后真实函数评价。",
+      "evidence_ids": [
+        "salib_docs",
+        "vanilla_bo2024",
+        "apic2026"
+      ],
+      "gap_queries": [
+        "{simulation_mechanism} {input_dependence} calibration validation sensitivity",
+        "{expensive_component} surrogate {missing_regime} error propagation limitation"
+      ],
+      "implementation_caution": "敏感性库与输入假设匹配；计算预算含每次模拟和代理重拟合。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "control",
+      "title": "反馈控制与序贯决策",
+      "aliases": [
+        "控制",
+        "MPC",
+        "强化学习"
+      ],
+      "signals": "实际闭环状态/观测、转移、反馈时序、约束、目标和预测误差清楚。",
+      "baseline": "可解释规则/DP/LQR或 MPC；按场景选合适者，不要求全部实现。",
+      "module_contract": "当时观测 → 状态估计/规划 → 行动 → 新观测；评估实际闭环而非离线单步拟合。",
+      "conditional_upgrades": [
+        "有依据时做鲁棒/情景 MPC 或小型动力学残差校正。",
+        "DreamerV3/world model 仅在已有可信环境、大量交互或可用轨迹、充分试跑时为研究备选。"
+      ],
+      "reject_conditions": [
+        "只有静态配置问题却引入 RL。",
+        "没有可靠模拟器/行为覆盖或独立可行性检查。",
+        "依据 A100 论文或模型参数量推断单卡 8GB 合算。"
+      ],
+      "minimal_validation": "同环境与总交互预算比较闭环目标、约束违背、异常/扰动与恢复；把模拟证据和物理实测分开。",
+      "evidence_ids": [
+        "mpc_docs",
+        "dreamer2025",
+        "apic2026"
+      ],
+      "gap_queries": [
+        "{dynamics} {constraints} {feedback_delay} model predictive control robust baseline",
+        "{selected_policy} {simulator_or_coverage_gap} validation interaction budget"
+      ],
+      "implementation_caution": "基础 MPC 依赖和仿真入口先试跑；不临场替换为尚未准备的世界模型管线。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    },
+    {
+      "id": "evaluation-clustering",
+      "title": "评价排序与无标签分群",
+      "aliases": [
+        "评价",
+        "聚类",
+        "排序"
+      ],
+      "signals": "区分有决策偏好的评价与探索性分组；指标方向、尺度和权重来源明确。",
+      "baseline": "可解释加权/秩和评价及权重敏感性；聚类用标准化 k-means/层次与无聚类描述对照。",
+      "module_contract": "指标/距离和有依据的偏好 → 排名或稳定群组；不从数据波动自动推断决策重要性。",
+      "conditional_upgrades": [
+        "权重不确定时做 SMAA 类型名次可接受性/偏好区域，显式声明权重空间。",
+        "非球状/噪声分群需要时考虑 HDBSCAN，并保留未分配点与稳定性。"
+      ],
+      "reject_conditions": [
+        "为了新模型而在小指标表训练深度聚类。",
+        "把均匀权重采样当真实社会偏好概率。",
+        "把同一算法生成的标签拿来证明分类准确率。"
+      ],
+      "minimal_validation": "检查归一化/权重扰动排名反转、分群重采样稳定、距离选择与任务意义；不强凑近期神经网络。",
+      "evidence_ids": [
+        "smaa2001",
+        "hdbscan2017",
+        "tabm2025"
+      ],
+      "gap_queries": [
+        "{evaluation_goal} {preference_uncertainty} rank reversal stochastic acceptability",
+        "{distance_or_cluster_shape} {small_sample_gap} clustering stability validation"
+      ],
+      "implementation_caution": "成熟方法就是本路线的主要锚点；近期有监督表格模型不自动替代无标签聚类。",
+      "family_status": "PREPARED",
+      "task_fit": "NOT_EVALUATED"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "tabm2025",
+      "title": "TabM: Advancing tabular deep learning with parameter-efficient ensembling",
+      "author_label": "Yury Gorishniy; Akim Kotelnikov; Artem Babenko",
+      "year": 2025,
+      "venue": "ICLR",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.iclr.cc/paper_files/paper/2025/hash/c1ba41c694834aeef91ae161711d4939-Abstract-Conference.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式摘要、论文方法片段和作者仓库说明",
+      "source_finding": "参数共享的 MLP 集成是表格学习的一条实用增量；论文比较中复杂注意力/检索结构未必划算。",
+      "version_note": "",
+      "implementation_url": "https://github.com/yandex-research/tabm",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "tabpfn2_2025",
+      "title": "Accurate predictions on small data with a tabular foundation model",
+      "author_label": "Noah Hollmann et al.",
+      "year": 2025,
+      "venue": "Nature 637:319–326",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://doi.org/10.1038/s41586-024-08328-6",
+      "supporting_urls": [
+        "https://docs.priorlabs.ai/models"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "出版元数据、摘要及官方版本表；直接文章页首轮抓取失败，DOI 搜索结果可核对",
+      "source_finding": "TabPFNv2 为小型表格回归/分类提供预训练上下文预测；这一论文不支持后续所有版本的能力声明。",
+      "version_note": "论文 2025；DOI 中的 2024 不是正式卷年。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "tabpfn3_2026",
+      "title": "TabPFN-3: Technical Report",
+      "author_label": "Léo Grinsztajn et al.",
+      "year": 2026,
+      "venue": "arXiv:2605.13986",
+      "publication_status": "PREPRINT",
+      "primary_url": "https://arxiv.org/abs/2605.13986",
+      "supporting_urls": [
+        "https://docs.priorlabs.ai/models",
+        "https://priorlabs.ai/technical-reports/tabpfn-3",
+        "https://arxiv.org/html/2605.13986v2"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "预印本第 2.1–2.4 节的结构/预处理/推断，官方版本表、完整仓库 README 与离线访问说明；非全文复现",
+      "source_finding": "采用三阶段表示、类别检索式输出、行分块和 KV 缓存减少部分推断成本；文中关键资源比较在 H100 上，不能据此承诺 8GB 运行规模。",
+      "version_note": "v1 2026-05-13，v2 2026-05-28；不是 Nature 2025 那篇论文的同一模型。",
+      "implementation_url": "https://github.com/PriorLabs/tabpfn",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "官方版本页列出模型权重专用许可证；代码与权重条款不同，具体用途未作法律判断。",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "tabicl2_2026",
+      "title": "TabICLv2: A better, faster, scalable, and open tabular foundation model",
+      "author_label": "Jingang Qu; David Holzmüller; Gaël Varoquaux; Marine Le Morvan",
+      "year": 2026,
+      "venue": "ICML 2026 / arXiv:2602.11139",
+      "publication_status": "ACCEPTED",
+      "primary_url": "https://arxiv.org/abs/2602.11139",
+      "supporting_urls": [
+        "https://icml.cc/Downloads/2026",
+        "https://tabicl.readthedocs.io/en/latest/",
+        "https://arxiv.org/html/2602.11139v1"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "预印本第 3 节、第 4.1–4.2 节与第 8 节，ICML 官方目录、作者仓库/文档；未复算基准",
+      "source_finding": "列嵌入/行压缩/数据集上下文学习与可缩放注意力；少于 300 样本未测试。论文另将文本语义、多输出/漂移扩展与分布回归真实数据评价列为局限，不能据分位数输出默认获得校准。",
+      "version_note": "官方会议目录及作者仓库确认 ICML 2026；arXiv 页面仍显示 2 月初版，不因没有更新期刊字段降作未录用。",
+      "implementation_url": "https://github.com/soda-inria/tabicl",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "作者仓库称代码与权重开放；具体使用版本条款仍需核对。",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "tfm_physics2026",
+      "title": "Do Tabular Foundation Models Know Physics? Contamination, Units, and the Deterministic Limit",
+      "author_label": "Wassim Tenachi; Yashar Hezaveh; Laurence Perreault Levasseur; Pierre-Luc Bacon",
+      "year": 2026,
+      "venue": "arXiv:2609.02766",
+      "publication_status": "PREPRINT",
+      "primary_url": "https://arxiv.org/abs/2609.02766",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "作者在物理方程数据上的探查区分预测插值与物理单位/确定性机制表达；作为外推和量纲检查的近期提醒。",
+      "version_note": "2026-09-02 v1；页面说明已投 NeurIPS 2026 workshop，未核实录用。负面结论也不能当作已完成同行评审的普遍定理。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "chronos2_2025",
+      "title": "Chronos-2: From Univariate to Universal Forecasting",
+      "author_label": "Abdul Fatir Ansari et al.",
+      "year": 2025,
+      "venue": "arXiv:2510.15821",
+      "publication_status": "PREPRINT",
+      "primary_url": "https://arxiv.org/abs/2510.15821",
+      "supporting_urls": [
+        "https://arxiv.org/html/2510.15821"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "预印本第 3.1–3.4 节及官方 README 模型表/输入输出示例；未复算基准",
+      "source_finding": "交替时间/组注意力与直接多步分位数输出；group ID 和未来输入 mask 决定单/多变量及协变量任务，实际未来未知量须屏蔽。",
+      "version_note": "当前仓库另列小型与合成预训练变体，不能把不同 checkpoint 当同一基准；本地没有下载或试跑。",
+      "implementation_url": "https://github.com/amazon-science/chronos-forecasting",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "timesfm2024",
+      "title": "A decoder-only foundation model for time-series forecasting",
+      "author_label": "Abhimanyu Das; Weihao Kong; Rajat Sen; Yichen Zhou",
+      "year": 2024,
+      "venue": "ICML / PMLR 235",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v235/das24c.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "TimesFM 的较早正式方法锚点，支持预训练时序预测这一技术来源。",
+      "version_note": "只为 2024 论文；不能据此证明 3.0 的新架构、许可或效果。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "timesfm3_2026",
+      "title": "TimesFM 3.0 official release and model card",
+      "author_label": "Google Research",
+      "year": 2026,
+      "venue": "Official software/model release",
+      "publication_status": "SOFTWARE_RELEASE",
+      "primary_url": "https://github.com/google-research/timesfm",
+      "supporting_urls": [
+        "https://huggingface.co/google/timesfm-3.0-pytorch",
+        "https://pypi.org/project/timesfm/"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "官方 release/README、模型卡、PyPI 版本日期",
+      "source_finding": "2026 年 8 月发布资料增加原生多变量与过去/未来协变量支持；选择版本时需同步输入接口。",
+      "version_note": "PyPI 3.0.0 为 2026-08-28；模型卡仍引用旧论文，故这里明确记软件发布而非新同行评审论文。",
+      "implementation_url": "https://github.com/google-research/timesfm",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "3.0 权重页标 TimesFM Non-Commercial License v1.0；不能沿用软件包 Apache 标记来概括权重。",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "ts_energy2026",
+      "title": "Benchmarking Time Series Foundation Models on their Accuracy and Energy Consumption",
+      "author_label": "Loïc Guibert; Benjamin Pasquier; Frédéric Montet; Beat Wolf",
+      "year": 2026,
+      "venue": "Swiss AI Days / PMLR 309",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v309/guibert26a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "在特定 School/MeteoSwiss 与滑窗协议下，模型准确率及能耗存在明显差异；不支持任何模型跨场景全面优越。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "ts_cloud2025",
+      "title": "Performance of Zero-Shot Time Series Foundation Models on Cloud Data",
+      "author_label": "William Toner et al.",
+      "year": 2025,
+      "venue": "ICLR workshop / PMLR 296",
+      "publication_status": "WORKSHOP",
+      "primary_url": "https://proceedings.mlr.press/v296/toner25a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "该云数据研究中简单线性基线胜过多种零样本模型；用于设置强基线与失效检查，不推广为全部领域结论。",
+      "version_note": "正式页面标题与旧快照的检索式标题不同；这里采用正式题名并保留 workshop 身份。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "enbpi2021",
+      "title": "Conformal prediction interval for dynamic time-series",
+      "author_label": "Chen Xu; Yao Xie",
+      "year": 2021,
+      "venue": "ICML / PMLR 139",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v139/xu21h.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "EnbPI 用 bootstrap ensemble 残差构造序贯区间；覆盖为相应误差依赖条件下的近似边际覆盖，不是任意联合路径保证。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "conformal_dependence2026",
+      "title": "Predictive inference for time series: why is split conformal effective despite temporal dependence?",
+      "author_label": "Rina Foygel Barber; Ashwin Pananjady",
+      "year": 2026,
+      "venue": "ALT / PMLR 313",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v313/barber26a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "以 switch coefficient 刻画依赖导致的覆盖损失，相关尖锐刻画针对平稳 beta-mixing 过程；不是任意非平稳序列免费覆盖。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "online_calibration2026",
+      "title": "Model-Agnostic Online Certificate-Driven Calibration for Time Series Forecasting Under Distribution Shift",
+      "author_label": "Chenfeng Huang; Zixuan Ma; George Michailidis",
+      "year": 2026,
+      "venue": "UAI / PMLR 337",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v337/huang26b.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "固定预测 backbone 上添加带门控的贝叶斯残差校准；结果到达后才更新后续预测。",
+      "version_note": "理论证书条件及完整实现未审透，本机未运行；只能作为有反馈漂移任务的条件候选。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "strap2025",
+      "title": "STRAP: Spatio-Temporal Pattern Retrieval for Out-of-Distribution Generalization",
+      "author_label": "Haoyu Zhang et al.",
+      "year": 2025,
+      "venue": "NeurIPS",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.nips.cc/paper_files/paper/2025/hash/ab062c6281873221743383f9619e07d2-Abstract-Conference.html",
+      "supporting_urls": [
+        "https://arxiv.org/abs/2505.19547"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "针对时空分布外泛化检索模式；迁移时应先有可验证的真实时空结构和无检索/固定结构对照。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "dro2025",
+      "title": "Distributionally robust optimization",
+      "author_label": "Daniel Kuhn; Soroosh Shafiee; Wolfram Wiesemann",
+      "year": 2025,
+      "venue": "Acta Numerica 34:579–804",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://www.cambridge.org/core/services/aop-cambridge-core/content/view/5B4E65E3A5A2AEF24E218A6B34E6EAA2/S0962492924000084a.pdf/distributionally_robust_optimization.pdf",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "论文首页、摘要和来源元数据；未声称通读 226 页综述",
+      "source_finding": "围绕与信息一致的歧义集优化最坏分布；适合作为歧义集、重构与保证的理论入口，不能任意指定半径。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "spo2022",
+      "title": "Smart Predict, then Optimize",
+      "author_label": "Adam N. Elmachtoub; Paul Grigas",
+      "year": 2022,
+      "venue": "Management Science 68(1):9–26",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://pubsonline.informs.org/doi/10.1287/mnsc.2020.3922",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "SPO/SPO+ 使预测损失对应优化决策误差；原文强调线性目标及可求解的下游优化结构。",
+      "version_note": "在线发表 2021，卷期 2022；日期差异保留。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "robust_dfl2026",
+      "title": "Robust Decision-Focused Learning via Worst-Case Regret Minimization",
+      "author_label": "Shoki Yamao et al.",
+      "year": 2026,
+      "venue": "UAI / PMLR 337",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v337/yamao26a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "分别针对系数测量误差与部署分布偏移构造最坏 regret 损失；需要相关训练实例与合适的不确定集合。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "cpsat_docs",
+      "title": "CP-SAT Solver",
+      "author_label": "Google OR-Tools",
+      "year": 2026,
+      "venue": "Official documentation, checked 2026-09-06",
+      "publication_status": "OFFICIAL_DOCS",
+      "primary_url": "https://developers.google.com/optimization/cp/cp_solver",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "官方建模/状态说明；year 为本次文档核验年，不是算法首次发表年",
+      "source_finding": "约束须用整数表达；求解状态区分 OPTIMAL、FEASIBLE、INFEASIBLE、MODEL_INVALID 和 UNKNOWN。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "metaphor2024",
+      "title": "Large-scale Benchmarking of Metaphor-based Optimization Heuristics",
+      "author_label": "Diederick Vermetten et al.",
+      "year": 2024,
+      "venue": "arXiv:2402.09800",
+      "publication_status": "PREPRINT",
+      "primary_url": "https://arxiv.org/abs/2402.09800",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "对大量隐喻启发式进行同协议基准，指出预算与指标影响排序；名称变化不是算法贡献证据。",
+      "version_note": "旧档案指向 GECCO DOI，本轮出版页获取未成功；此卡只采用实际可读预印本证据，不假报正式页已核验。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "did2021",
+      "title": "Difference-in-Differences with multiple time periods",
+      "author_label": "Brantly Callaway; Pedro H. C. Sant'Anna",
+      "year": 2021,
+      "venue": "Journal of Econometrics 225(2):200–230",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://www.sciencedirect.com/science/article/pii/S0304407620303948",
+      "supporting_urls": [
+        "https://arxiv.org/abs/1803.09015"
+      ],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式摘要/引言与作者预印本元数据",
+      "source_finding": "处理时点错开时区分组别—时间效应；识别、聚合与估计分开，并保留平行趋势等前提。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "causal_bounds2026",
+      "title": "Bounding the Causal Impact of ML-assisted Decision-Making via Counterfactual Correctness",
+      "author_label": "Jonathan Zhang; Erik Skalnes; Jacob M. Chen; Michael Oberst",
+      "year": 2026,
+      "venue": "UAI / PMLR 337",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v337/zhang26b.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "借助既有 RCT 与两类单调性假设，给更新后 ML 辅助决策的因果效果界；不是一般观察面板的自动因果方案。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "apic2026",
+      "title": "APIC: Amortized Physics-Informed Calibration using Neural Processes",
+      "author_label": "Aishwarya Venkataramanan; Sai Karthikeya Vemuri; Joachim Denzler",
+      "year": 2026,
+      "venue": "UAI / PMLR 337",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v337/venkataramanan26a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式摘要及公开仓库说明；未发现明确许可证说明，保持未知",
+      "source_finding": "在相关系统族中区分实例物理参数与共享结构失配，摊销校准；单一实例或不可辨识问题未必受益。",
+      "version_note": "",
+      "implementation_url": "https://github.com/cvjena/APIC",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "deltaphi2025",
+      "title": "DeltaPhi: Physical States Residual Learning for Neural Operators in Data-Limited PDE Solving",
+      "author_label": "Xihang Yue; Yi Yang; Linchao Zhu",
+      "year": 2025,
+      "venue": "NeurIPS",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.neurips.cc/paper_files/paper/2025/hash/12bf28fb68f295f855a5bf0c5a217d6e-Abstract-Conference.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "把直接算子映射改为相近物理状态间的轨迹残差学习；训练配对与近邻检索要限制在训练集。",
+      "version_note": "",
+      "implementation_url": "https://github.com/yuexihang/DeltaPhi",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "pysindy2020",
+      "title": "PySINDy: A Python package for the sparse identification of nonlinear dynamical systems from data",
+      "author_label": "Brian M. de Silva et al.",
+      "year": 2020,
+      "venue": "JOSS 5(49):2104",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://joss.theoj.org/papers/10.21105/joss.02104",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式软件论文元数据和功能说明；未试跑当前包",
+      "source_finding": "提供稀疏动力学辨识实现入口；使用前需自行核对导数噪声、候选函数库、量纲与状态可观测性。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "cadsr2026",
+      "title": "Complexity-Aware Deep Symbolic Regression with Robust Risk-Seeking Policy Gradients",
+      "author_label": "Zachary Bastiani; Mike Kirby; Jacob Hochhalter; Shandian Zhe",
+      "year": 2026,
+      "venue": "AISTATS / PMLR 300",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v300/bastiani26a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "用复杂度—拟合奖励和策略更新改进表达式发现；适合已有符号回归缺陷的研究候选。",
+      "version_note": "",
+      "implementation_url": "https://github.com/ZakBastiani/CADSR",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "vanilla_bo2024",
+      "title": "Vanilla Bayesian Optimization Performs Great in High Dimensions",
+      "author_label": "Carl Hvarfner; Erik Orm Hellsten; Luigi Nardi",
+      "year": 2024,
+      "venue": "ICML / PMLR 235",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://proceedings.mlr.press/v235/hvarfner24a.html",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "按维数调整 GP 长度尺度先验可显著改变标准 BO 表现；不能未经公平调校就宣称复杂高维结构必要。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "qnehvi2021",
+      "title": "Parallel Bayesian Optimization of Multiple Noisy Objectives with Expected Hypervolume Improvement",
+      "author_label": "Samuel Daulton; Maximilian Balandat; Eytan Bakshy",
+      "year": 2021,
+      "venue": "NeurIPS 2021, author accepted-version record",
+      "publication_status": "ACCEPTED",
+      "primary_url": "https://arxiv.org/abs/2105.08195",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "qNEHVI 对噪声下的 Pareto 前沿不确定性积分并支持批量选择；仍需设定参考点、模型和真实评价预算。",
+      "version_note": "作者版本说明即将发表于 NeurIPS 2021；本轮未抓取独立正式会议页。",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "salib_docs",
+      "title": "SALib: Sensitivity Analysis Library in Python",
+      "author_label": "SALib developers; Takuya Iwanaga, William Usher and Jonathan Herman (2022 reference)",
+      "year": 2026,
+      "venue": "Official software documentation, checked 2026-09-06",
+      "publication_status": "OFFICIAL_DOCS",
+      "primary_url": "https://salib.readthedocs.io/en/latest/",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "官方文档与仓库引用信息",
+      "source_finding": "提供 Sobol、Morris 等敏感性分析入口；实际采样依赖、范围和估计误差仍由本题确定。",
+      "version_note": "当前文档年与 2022 方法/软件论文分开；2022 正式落地页本轮抓取失败，未用错误 JOSS 编号替代。",
+      "implementation_url": "https://github.com/salib/salib",
+      "implementation_status": "PAGE_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "mpc_docs",
+      "title": "do-mpc: Model predictive control python toolbox",
+      "author_label": "do-mpc developers",
+      "year": 2026,
+      "venue": "Official documentation 5.1.2, checked 2026-09-06",
+      "publication_status": "OFFICIAL_DOCS",
+      "primary_url": "https://www.do-mpc.com/en/latest/",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "官方工具说明/文档版本；未试跑依赖",
+      "source_finding": "模型预测控制、状态估计与仿真工具入口；版本可用不等于实际系统闭环有效。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "dreamer2025",
+      "title": "Mastering diverse control tasks through world models",
+      "author_label": "Danijar Hafner; Jurgis Pasukonis; Jimmy Ba; Timothy Lillicrap",
+      "year": 2025,
+      "venue": "Nature 640:647–653",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://www.nature.com/articles/s41586-025-08744-2",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式论文方法与评估片段、硬件说明和出版元数据",
+      "source_finding": "DreamerV3 学习世界模型并从交互经验改进策略；论文实验使用 A100 与大量交互，不构成临场 8GB 可运行证明。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "hdbscan2017",
+      "title": "hdbscan: Hierarchical density based clustering",
+      "author_label": "Leland McInnes; John Healy; Steve Astels",
+      "year": 2017,
+      "venue": "JOSS 2(11):205",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://joss.theoj.org/papers/10.21105/joss.00205",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "正式软件论文元数据与功能说明",
+      "source_finding": "密度层级分群的成熟实现来源；不能以无标签聚类生成的分组冒充独立真值。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    },
+    {
+      "id": "smaa2001",
+      "title": "SMAA-2: Stochastic Multicriteria Acceptability Analysis for Group Decision Making",
+      "author_label": "Risto Lahdelma; Pekka Salminen",
+      "year": 2001,
+      "venue": "Operations Research 49(3):444–454",
+      "publication_status": "PEER_REVIEWED",
+      "primary_url": "https://pubsonline.informs.org/doi/abs/10.1287/opre.49.3.444.11220",
+      "supporting_urls": [],
+      "verified_on": "2026-09-06",
+      "read_scope": "元数据与摘要；未复算全文实验",
+      "source_finding": "考察偏好权重与不确定指标下的各名次可接受性；其结果依赖声明的权重/指标分布，不是客观正确概率。",
+      "version_note": "",
+      "implementation_url": null,
+      "implementation_status": "NOT_CHECKED",
+      "license_note": "NOT_VERIFIED",
+      "local_smoke": "NOT_RUN",
+      "task_validation": "NOT_RUN"
+    }
+  ],
+  "search_provenance": {
+    "mode": "PRECONTEST_SEARCH",
+    "searched_on": "2026-09-06",
+    "timezone": "Asia/Shanghai",
+    "precision": "DATE_ONLY; individual tool calls are in the maintenance session, no fabricated hour-level timestamps",
+    "sites": [
+      "PMLR",
+      "ICLR Proceedings",
+      "NeurIPS Proceedings",
+      "ICML official catalog",
+      "arXiv",
+      "Nature",
+      "Cambridge",
+      "INFORMS",
+      "JOSS",
+      "ScienceDirect",
+      "official author repositories/documentation/model cards"
+    ],
+    "queries": [
+      "site.nature.com TabPFN 2026 tabular foundation model 2025 08328",
+      "site.openreview.net TabM Tabular Deep Learning Parameter Efficient Ensembling TabICL 2025 2026",
+      "site.arxiv.org Chronos-2 TimesFM 2.5 time series 2025 2026",
+      "site.cambridge.org Acta Numerica distributionally robust optimization 2025 Rahimian Mehrotra Kuhn",
+      "TabPFN 2.5 2025 2026 arxiv Prior Labs official",
+      "TabICL 2025 ICML proceedings Qu Shi Grinsztajn TabICLv2 2026",
+      "site.proceedings.mlr.press \"TabICLv2\" 2026",
+      "site.proceedings.neurips.cc \"STRAP\" \"Spatio-Temporal\" 2025",
+      "site.proceedings.mlr.press \"Are Time-Series Foundation Models Better\"",
+      "site.proceedings.mlr.press \"Benchmarking Time Series Foundation Models\" \"Energy\"",
+      "site.icml.cc/virtual/2026 \"TabICLv2\"",
+      "site.arxiv.org \"TimesFM 3.0\"",
+      "site.proceedings.iclr.cc 2025 \"TabM\"",
+      "site.nature.com/articles/s41586-024-08328-6 \"Hollmann\"",
+      "site.restud.com \"A More Credible Approach\" \"Rambachan\"",
+      "\"SMAA-2\" \"2001\" \"Lahdelma\"",
+      "site.jair.org \"Decision-Focused Learning\" \"15320\"",
+      "site.arxiv.org \"RL4CO\" \"KDD\" 2025",
+      "site.sciencedirect.com \"Difference-in-Differences with Multiple Time Periods\" 2021",
+      "site.nature.com \"Mastering diverse control tasks through world models\" \"2025\"",
+      "\"Smart Predict, then Optimize\" \"Management Science\"",
+      "\"SALib\" \"Iwanaga\" \"2022\" JOSS",
+      "\"Large-Scale Benchmarking of Metaphor-Based Optimization Heuristics\" arxiv",
+      "\"Decision-Focused Learning: Foundations\" \"2024\""
+    ],
+    "failures": [
+      "OpenReview TabM browser challenge; used official ICLR proceedings and paper instead.",
+      "Nature TabPFNv2 initial direct fetch error; DOI search result and official model documentation used.",
+      "JAIR DFL DOI and ACM RL4CO DOI fetch errors; neither was promoted into the prepared source set; use verified SPO/UAI evidence instead.",
+      "Rambachan-Roth DOI redirect failed; did not fabricate detailed evidence.",
+      "SALib guessed JOSS 04597 link failed and was not used; corrected citation source from official SALib docs/repository.",
+      "SALib 2022 SESMO landing fetch failed; catalog entry is official docs, not claimed full-paper verification.",
+      "BoTorch guessed tutorial URL failed; used verified qNEHVI author record as the method anchor.",
+      "APIC/DeltaPhi/CADSR pages did not expose an explicit license in reviewed text; license remains NOT_VERIFIED.",
+      "TimesFM 3.0 search led to a software release/model card still citing older paper; no unverified new research-paper identity was manufactured."
+    ],
+    "coverage_note": "Task-family preparation and targeted recent updates, not exhaustive newest-paper discovery in every field; no GPU algorithm replication."
+  }
+}
